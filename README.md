@@ -13,25 +13,11 @@
 
 ## 安装 / Install
 
-在你的 agent 里粘贴以下内容：
+在你的 agent 里说：
 
 ```
-帮我安装 muyuzhong/gh-semantic-search 这个 skill：
-1. 执行 npx skills add muyuzhong/gh-semantic-search
-2. 如果 npx 不可用，从 https://raw.githubusercontent.com/muyuzhong/gh-semantic-search/main/.claude/skills/gh-semantic-search/SKILL.md 下载文件到 .claude/skills/gh-semantic-search/SKILL.md
+帮我安装 muyuzhong/gh-semantic-search 这个 skill
 ```
-
-<details>
-<summary>手动安装 / Manual Install</summary>
-
-```bash
-# 在项目根目录执行
-mkdir -p .claude/skills/gh-semantic-search
-curl -o .claude/skills/gh-semantic-search/SKILL.md \
-  https://raw.githubusercontent.com/muyuzhong/gh-semantic-search/main/.claude/skills/gh-semantic-search/SKILL.md
-```
-
-</details>
 
 ## 使用 / Usage
 
