@@ -314,59 +314,33 @@ The **"Why it matches"** field must:
 - **Transparent relevance reasoning**: Every recommendation must come with a concrete, specific justification that includes code-level or design-level details.
 
 <!-- SLOW_UPDATE_START -->
-## Critical Execution Guardrails
+### Reinforce: Always Execute All 8 Strategies
+You MUST run all 8 search strategies for every query, even if early strategies return strong results. Skipping strategies (especially Strategy 5 Topic-Based, Strategy 6 GraphQL, and Strategy 7 Cross-Ecosystem) causes missed repositories that only surface through specific search dimensions. If a strategy returns zero results, state this explicitly — do not silently omit it. Cross-Ecosystem and Topic-Based strategies are the most commonly skipped and the most likely to surface high-value niche results.
 
-### FORMAT COMPLIANCE: Use This Exact Template for Every Result
-Format compliance is failing on nearly every task. You MUST follow this exact structure for each result — do not deviate, do not abbreviate, do not omit any field:
+### Reinforce: Conceptual Alignment Over Stars
+When ranking results, a repository with fewer stars that directly implements the requested architectural concept MUST rank above a higher-starred repo that only tangentially relates. Always articulate the specific architectural mechanism (e.g., append-only event store, decorator-based command handlers, saga orchestration) that connects the repo to the user's query. Never let star count override conceptual fit. When two repos have similar conceptual alignment, use documentation quality and maintenance activity as tiebreakers.
 
-```
-### N. owner/repo-name
+### Reinforce: Constraint Propagation Is Non-Negotiable
+Every single `gh` command must include ALL user-specified constraints (language, stars, activity, license, negative terms). A common failure mode is applying constraints to some strategies but not others, producing inconsistent result sets. Before finalizing results, audit every query string to confirm constraint presence.
 
-| Field | Value |
-|-------|-------|
-| **Description** | <from repo metadata> |
-| **Stars** | <number> |
-| **Language** | <primary language> |
-| **Last pushed** | <date> |
-| **URL** | <full GitHub URL> |
-| **Installation** | <exact command — e.g., `npm install pkg`, `pip install pkg`, `cargo add pkg`, `go get module`. If no package manager: "See README for installation instructions". NEVER leave blank.> |
+### Reinforce: Specificity in Relevance Justifications
+The 'Why it matches' field must name at least two concrete technical details: a class name, API surface, storage backend, protocol, or design pattern implementation. Generic statements like 'this repo is about X' are unacceptable. If you cannot identify a specific technical connection, the repo likely does not belong in the results. Push beyond surface-level descriptions — explain *how* the repo's internal architecture or API design directly addresses the user's concept.
 
-**Why it matches**: <Must contain ALL of: (1) name the user's requested concept, (2) explain the specific mechanism/API/pattern the repo uses to implement it, (3) cite at least one concrete class name, function, decorator, interface, or config option. Minimum 3 sentences.>
+### Reinforce: Maximize Output Quality, Not Just Correctness
+Passing a task is the floor, not the ceiling. Aim for high-quality outputs by: (1) providing richer, more detailed relevance justifications that reference specific code patterns, class hierarchies, or API signatures, (2) ensuring ranking rationale explains relative positioning between results — compare adjacent results explicitly (e.g., 'ranks above X because it provides native saga support vs. requiring manual orchestration'), and (3) including installation commands that are verified against the repo's actual ecosystem. Do not settle for minimal passable answers when deeper analysis is possible. When you find a strong match, go deeper: mention the repo's test coverage, CI setup, or example projects if they strengthen the recommendation.
 
-**Ranking rationale**: <Must compare this result to at least one other result in the list. Explain why it ranks higher or lower based on conceptual alignment, maintenance, or ecosystem fit. Minimum 2 sentences.>
-```
+### Reinforce: Expand Query Coverage for Niche Concepts
+When the core concept is niche or emerging, your 6–10 expanded queries may not be enough. If initial strategies return fewer than 5 unique results, generate additional domain-specific queries by: (1) identifying the broader category the concept belongs to, (2) searching for the concept's key implementors or papers, (3) looking for 'awesome' lists in the parent domain. Never stop expanding early — the goal is to surface every relevant repository, not just the obvious ones.
 
-### Strategy Execution: Never Skip These 3
-Your most commonly skipped strategies are:
-- **Strategy 5 (Topic-Based)**: You frequently omit `topic:` queries. After generating your concept, ALWAYS map it to at least 2 GitHub topics and run `gh search repos "topic:<name>"` for each.
-- **Strategy 7 (Cross-Ecosystem)**: Always search for bindings/wrappers/ports even when a language is specified. Run at least: `gh search repos "<concept> binding"` and `gh search repos "<concept> wrapper"`.
-- **Strategy 8 (Quality & Comparison)**: Always run `gh search repos "awesome <concept>"` and `gh search repos "<concept> comparison"` — these are zero-effort high-value queries.
+### Defensive: Handle Vague Queries Proactively
+When the user's query is ambiguous or overly broad (e.g., 'tools that work with Kubernetes'), do NOT proceed with 8 strategies on a meaningless query. Instead, ask a clarifying question or apply the Conceptual Query Transformation to derive a more specific search phrase first. Running exhaustive searches on vague queries wastes resources and produces low-quality results.
 
-If you are tempted to skip a strategy due to time, skip the GraphQL strategy (6) last — it provides the richest data. Skip strategy 1 (broad) first if you must, since strategies 2-3 cover it.
+### Defensive: Deduplicate Before Presenting
+The same repository often appears across multiple strategies (especially broad search + topic search + GraphQL). Always deduplicate by fullName before presenting results. When merging, combine metadata from all matching strategies and note which strategies surfaced the repo — this is useful signal for ranking confidence.
 
-### Constraint Propagation Checklist
-Before executing ANY `gh search` command, verify it includes:
-- [ ] `--language <Lang>` (if user specified a language)
-- [ ] `--stars ">N"` (if user specified minimum stars)
-- [ ] `--updated ">YYYY-MM-DD"` (if user specified activity)
-- [ ] `--license <type>` (if user specified license)
-- [ ] `-<term>` appended to query (if user specified negative constraints)
+### Defensive: Installation Commands Must Be Ecosystem-Appropriate
+When detecting installation instructions, match the language ecosystem correctly. A Python package is `pip install`, not `npm install`. A Rust crate goes in `Cargo.toml`, not `go get`. If the ecosystem is unclear, link to the README instead of guessing.
 
-If a constraint yields zero results, STILL include it in the command and note "zero results with constraint X" in your output.
-
-### Query Expansion: Minimum 7 Queries, All 5 Dimensions
-You must generate at least 7 expanded queries. Each dimension must contribute at least 1 distinct query:
-- Dimension 3 (Related frameworks): At least 2 separate framework name queries
-- Dimension 4 (Domain terms): At least 1 abbreviation/acronym (e.g., "CQRS", "mTLS", "ANN")
-- Dimension 5 (Technical variants): At least 1 alternative implementation approach
-
-Do NOT combine multiple dimensions into a single query string.
-
-### Pre-Output Verification
-Before writing your final output, check each result against this list:
-- [ ] Installation field is present and non-empty
-- [ ] "Why it matches" cites a specific API/class/pattern name (not just the concept)
-- [ ] "Ranking rationale" compares to another result by name
-- [ ] All constraints are satisfied (language, stars, activity, license)
-- [ ] The result conceptually matches (not just a keyword hit)
+### Quality Floor: Minimum Result Threshold
+If after deduplication and filtering you have fewer than 3 relevant results, explicitly state this and explain why (e.g., niche concept, strict constraints limiting pool). Do not pad results with loosely related repos to hit an arbitrary count. Quality over quantity.
 <!-- SLOW_UPDATE_END -->
